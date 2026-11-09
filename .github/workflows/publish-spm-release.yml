@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout fork
         uses: actions/checkout@v4
