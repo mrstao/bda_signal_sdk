@@ -1,6 +1,8 @@
 name: Sync upstream and publish
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: "23 2 * * *"
   workflow_dispatch:
@@ -13,7 +15,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The first push after SPM setup creates the initial version tag.
+  # Later upstream version tags are handled by the scheduled/manual sync job.
+  initial-release:
+    if: github.event_name == 'push'
+    runs-on: macos-14
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create initial SPM version tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(sed -n 's/^[[:space:]]*spec.version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' BDASignalSDK.podspec | head -n 1)"
+          if [[ -z "$version" ]]; then
+            echo "Unable to read SDK version from BDASignalSDK.podspec."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$version" >/dev/null 2>&1; then
+            echo "Version tag $version already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$version" HEAD
+          git push origin "$version"
+          gh release create "$version" --title "BDASignalSDK $version" --generate-notes
+
   sync:
+    if: github.event_name != 'push'
     runs-on: macos-14
     steps:
       - name: Checkout fork
@@ -59,8 +97,7 @@ jobs:
             exit 0
           fi
 
-          # The tag was fetched from upstream; replace the local ref so the
-          # fork's release tag points at the merged commit containing Package.swift.
+          # Point the SPM tag at the merged fork commit, which contains Package.swift.
           git tag -d "$latest_tag"
           git tag "$latest_tag" HEAD
           git push origin "$latest_tag"
