@@ -32,8 +32,7 @@ let package = Package(
                 .linkedFramework("StoreKit"),
                 .linkedFramework("WebKit"),
                 .linkedFramework("AdSupport"),
-                .linkedLibrary("sqlite3"),
-                .unsafeFlags(["-ObjC"])
+                .linkedLibrary("sqlite3")
             ]
         ),
         .target(
