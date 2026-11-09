@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          latest_tag="$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$' | sort -V | tail -n 1 || true)"
+          latest_tag="$(git tag --list | grep -E '^[0-9]+[.][0-9]+[.][0-9]+([.-].*)?$' | sort -V | tail -n 1 || true)"
           if [[ -z "$latest_tag" ]]; then
             echo "No semantic version tag found upstream; skipping release."
             exit 0
@@ -59,8 +59,9 @@ jobs:
             exit 0
           fi
 
-          # Tag the merged fork commit, not upstream/main: the upstream commit
-          # does not contain this fork's Package.swift and SPM wrapper.
+          # The tag was fetched from upstream; replace the local ref so the
+          # fork's release tag points at the merged commit containing Package.swift.
+          git tag -d "$latest_tag"
           git tag "$latest_tag" HEAD
           git push origin "$latest_tag"
           gh release create "$latest_tag" --title "BDASignalSDK $latest_tag" --generate-notes
