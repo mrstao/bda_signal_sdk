@@ -29,9 +29,9 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("UIKit"),
-                .linkedFramework("Foundation"),
                 .linkedFramework("StoreKit"),
                 .linkedFramework("WebKit"),
+                .linkedFramework("AdSupport"),
                 .linkedLibrary("sqlite3"),
                 .unsafeFlags(["-ObjC"])
             ]
