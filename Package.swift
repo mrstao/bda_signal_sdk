@@ -41,7 +41,7 @@ let package = Package(
             dependencies: ["BDASignalSDKObjC"],
             path: "Sources/BDASignalSDK",
             sources: ["Exports.swift"],
-            resources: [.copy("../../Assets/PrivacyInfo.xcprivacy")]
+            resources: [.copy("Resources/PrivacyInfo.xcprivacy")]
         )
     ]
 )
