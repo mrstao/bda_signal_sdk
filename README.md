@@ -16,12 +16,14 @@ Ocean Engine BDASignalSDK 的 Swift Package Manager 适配仓库。官方 Object
 https://github.com/mrstao/bda_signal_sdk.git
 ```
 
-选择产品 **BDASignalSDK**。
+选择产品 **BDASignalSDK**。在 App target 的 **Build Settings → Other Linker Flags** 中保留 `$(inherited)` 并添加 `-ObjC`。
+
+原 `2.0.0` 标签的包配置含有 `unsafeFlags`，会被部分 Xcode 工程拒绝作为依赖。本次仅修复 SPM 包装配置，SDK 业务源码与二进制仍为上游 2.0.0；请使用下方固定提交，或选择已包含修复的 `main` 分支。
 
 也可以在 Package.swift 中声明：
 
 ```swift
-.package(url: "https://github.com/mrstao/bda_signal_sdk.git", from: "2.0.0")
+.package(url: "https://github.com/mrstao/bda_signal_sdk.git", revision: "d84085ac747754da9aea19c1930f493ed7745542")
 ```
 
 Swift：
