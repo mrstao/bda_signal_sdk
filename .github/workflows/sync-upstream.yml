@@ -24,7 +24,14 @@ jobs:
       - name: Configure upstream
         run: |
           git remote add upstream https://github.com/oceanengine/bda_signal_sdk.git
-          git fetch upstream --prune --tags
+
+          # Fetch upstream branches without importing tags into refs/tags.
+          git fetch upstream --prune --no-tags
+
+          # Keep upstream tags in a separate namespace to avoid collisions
+          # with tags owned by this fork.
+          git fetch upstream --prune \
+            '+refs/tags/*:refs/remotes/upstream/tags/*'
 
       - name: Merge upstream main
         run: |
@@ -47,27 +54,49 @@ jobs:
 
       - name: Publish latest upstream version
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
-          latest_tag="$(git tag --list | grep -E '^[0-9]+[.][0-9]+[.][0-9]+([.-].*)?$' | sort -V | tail -n 1 || true)"
+          # Read version tags from the isolated upstream namespace.
+          latest_tag="$(
+            git for-each-ref \
+              --format='%(refname:strip=4)' \
+              refs/remotes/upstream/tags \
+            | grep -E '^[0-9]+[.][0-9]+[.][0-9]+([.-].*)?$' \
+            | sort -V \
+            | tail -n 1 || true
+          )"
+
           if [[ -z "$latest_tag" ]]; then
             echo "No semantic version tag found upstream; skipping release."
             exit 0
           fi
 
-          if git ls-remote --exit-code --tags origin "refs/tags/$latest_tag" >/dev/null 2>&1; then
-            echo "Tag $latest_tag already exists in fork."
-            exit 0
+          echo "Latest upstream version: $latest_tag"
+
+          # Never move or overwrite a tag that already exists in the fork.
+          if git ls-remote --exit-code --tags origin \
+            "refs/tags/$latest_tag" >/dev/null 2>&1; then
+            echo "Tag $latest_tag already exists in fork; keeping it."
+          else
+            # Point a new SPM tag at the synchronized fork commit,
+            # which contains Package.swift and the SwiftPM wrapper.
+            git tag "$latest_tag" HEAD
+            git push origin "$latest_tag"
           fi
 
-          # Point the SPM tag at the merged fork commit, which contains Package.swift.
-          git tag -d "$latest_tag"
-          git tag "$latest_tag" HEAD
-          git push origin "$latest_tag"
-          gh release create "$latest_tag" --title "BDASignalSDK $latest_tag" --generate-notes
+          # gh may otherwise select the upstream remote. Always target this fork.
+          if gh release view "$latest_tag" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $latest_tag already exists in $GITHUB_REPOSITORY."
+          else
+            gh release create "$latest_tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "BDASignalSDK $latest_tag" \
+              --generate-notes
+          fi
 
   package-check:
     if: github.event_name == 'push'
