@@ -20,19 +20,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.9"
 
       - name: Validate package
         run: |
+          swift --version
           swift package dump-package
           swift package describe
 
       - name: Create tag and GitHub Release
         env:
-          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-          VERSION: \${{ inputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
