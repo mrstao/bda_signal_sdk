@@ -40,12 +40,10 @@ jobs:
           git checkout main
           git merge --no-edit upstream/main
 
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.9"
 
       - name: Validate Swift package manifest
         run: |
+          swift --version
           swift package dump-package
           swift package describe
 
@@ -54,7 +52,7 @@ jobs:
 
       - name: Publish latest upstream version
         env:
-          GH_TOKEN: ${ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -103,10 +101,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.9"
       - name: Validate package manifest
         run: |
+          swift --version
           swift package dump-package
           swift package describe
